@@ -221,7 +221,7 @@ export default function ShopPage() {
 
                       {/* Format tags */}
                       <div className="mt-3 flex flex-wrap gap-1.5">
-                        {asset.formats.map((fmt) => (
+                        {Array.isArray(asset.formats) && asset.formats?.map((fmt) => (
                           <span
                             key={fmt}
                             className={`rounded border px-1.5 py-0.5 font-mono text-xs ${formatColor[fmt] ?? "border-border bg-secondary text-muted-foreground"}`}
