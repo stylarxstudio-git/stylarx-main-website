@@ -9,7 +9,7 @@ import Link from "next/link"
 import { ArrowLeft, Lock, Download, FileBox, ChevronDown, Package, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-export const dynamic = "force-dynamic"
+export const dynamic = "force-dynamic";
 
 export default async function ProductPage({
   params,
