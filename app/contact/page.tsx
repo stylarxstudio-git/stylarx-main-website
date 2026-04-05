@@ -30,12 +30,12 @@ const faqs = [
     answer: "We typically respond to all inquiries within 24 hours during business days."
   },
   {
-    question: "Do you offer custom asset creation?",
-    answer: "Yes! Contact us for custom 3D asset creation and we'll provide a quote based on your requirements."
+    question: "I found a bug in a Asset. Will you fix it?",
+    answer: "Yes. We take feedback seriously. If something's off, we'll fix and update it."
   },
   {
-    question: "Can I request specific assets?",
-    answer: "Absolutely. We love hearing from our community. Submit your asset requests and we'll consider them for future drops."
+    question: "What's your refund policy?",
+    answer: "No — Because These are Digital files. But we will fix the issue and get back to you."
   },
 ]
 
