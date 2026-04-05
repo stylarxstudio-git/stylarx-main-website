@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -v \"^ui$\")",
+      "Bash(wc -l \"C:\\\\Users\\\\nevan\\\\Desktop\\\\stylarx-main-website/components/ui\"/*.tsx)",
+      "WebFetch(domain:v0-website-redesign-rose-ten.vercel.app)",
+      "Bash(pnpm build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(ls -la /c/Users/nevan/Desktop/stylarx-main-website/.env*)",
+      "Bash(pnpm add:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)"
+    ]
+  }
+}
