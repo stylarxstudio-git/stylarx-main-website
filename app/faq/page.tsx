@@ -7,9 +7,9 @@ import Link from "next/link"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
-type Category = "ALL" | "FOUNDER PROGRAM" | "THE VAULT" | "LICENSING" | "TECHNICAL"
+type Category = "ALL" | "FOUNDER PROGRAM" | "THE ASSETS" | "LICENSING" | "TECHNICAL"
 
-const categories: Category[] = ["ALL", "FOUNDER PROGRAM", "THE VAULT", "LICENSING", "TECHNICAL"]
+const categories: Category[] = ["ALL", "FOUNDER PROGRAM", "THE ASSETS", "LICENSING", "TECHNICAL"]
 
 interface FAQ {
   category: Exclude<Category, "ALL">
@@ -22,23 +22,16 @@ const faqs: FAQ[] = [
   // FOUNDER PROGRAM
   {
     category: "FOUNDER PROGRAM",
-    question: "Is the slot counter real, or is this manufactured urgency?",
-    answer:
-      "Real. Every purchase decrements the counter from the database. 23 people have already locked in at $59. When slot 250 is claimed, the Founder Alpha rate closes permanently. We don't reset counters, extend deadlines, or reopen tiers after they close. The price architecture is fixed at launch.",
-    cta: { label: "See Current Slot Count", href: "/pricing#tier-alpha" },
-  },
-  {
-    category: "FOUNDER PROGRAM",
     question: "What exactly happens when Tier 1 sells out?",
     answer:
-      "The price moves to $79. Not temporarily — permanently. After 500 more slots at $79, it moves to $99 and stays there. The $59 rate cannot be recovered, negotiated, grandfathered in, or retroactively applied after Tier 1 closes. There is no grace period. Slot 250 is the hard cutoff.",
+      "The price moves to $99. Not temporarily — permanently. After 250 more slots at $99, it moves to $149 and stays there. The $59 rate cannot be recovered after Tier 1 closes. There is no grace period. Slot 250 is the hard cutoff.",
     cta: { label: "View Pricing Tiers", href: "/pricing" },
   },
   {
     category: "FOUNDER PROGRAM",
     question: "Can I lose my Founder status after buying?",
     answer:
-      "No. Your rate and access are locked at the moment of purchase. We cannot raise your price, convert your one-time payment to a subscription, or remove your Founder status. The purchase contract supersedes any future changes to our terms of service. You bought a rate, not a subscription to a rate.",
+      "No. Your rate and access are locked at the moment of purchase. We cannot raise your price, convert your one-time payment to a subscription, or remove your Founder status.",
     cta: undefined,
   },
   {
@@ -55,41 +48,34 @@ const faqs: FAQ[] = [
       "One per account by default. If you need multiple Founder seats for a studio or team, contact us before purchasing. We handle team setups manually to make sure each account is properly provisioned and receives the correct rate.",
     cta: { label: "Contact for Team Access", href: "/contact" },
   },
-  {
-    category: "FOUNDER PROGRAM",
-    question: "What if you raise prices again after Standard?",
-    answer:
-      "Your rate is locked. If we ever raise the Standard price above $99, existing accounts — Founder or Standard — are unaffected. Your lifetime access means the price you paid is the price you paid. We have no mechanism to bill you again.",
-    cta: undefined,
-  },
-
+  
   // THE VAULT
   {
-    category: "THE VAULT",
-    question: "What's actually in the vault right now?",
+    category: "THE ASSETS",
+    question: "What Assets are available right now?",
     answer:
-      "147 production assets across 7 categories: 51 3D models, 21 3D mockups, 7 scenes, 50 Gobo textures, 5 geometry node sets, 4 Blender add-ons (Pure Bake, StashOps, CineOps, Scatter Pro), and 5 2D mockups. New drops are added weekly — Founders are notified 24 hours before public release.",
+      "140= production assets across 7 categories: 3D models, 3D mockups, scenes, Gobo textures, geometry node sets, Blender add-ons, 2D mockups. New drops are added weekly.",
     cta: { label: "Browse the Shop", href: "/shop" },
   },
   {
-    category: "THE VAULT",
+    category: "THE ASSETS",
     question: "What happens to my files if Stylarx goes offline?",
     answer:
-      "Downloaded assets are yours — stored locally, licensed forever, used indefinitely under your commercial license. The 125GB cloud vault depends on Stylarx remaining operational. If we ever sunset the platform, we commit to 90 days advance notice and a full export window for your vault contents. Files you've already downloaded are entirely unaffected regardless.",
+      "Downloaded assets are yours — stored locally, licensed forever, used indefinitely under your commercial license. The 125GB cloud vault depends on Stylarx remaining operational. If we ever sunset the platform, we commit to 60 days advance notice. Files you've already downloaded are entirely unaffected regardless.",
     cta: undefined,
   },
   {
-    category: "THE VAULT",
+    category: "THE ASSETS",
     question: "Is the 125GB for Stylarx assets or my own files?",
     answer:
-      "Both — but separately. The full Stylarx asset library is accessible to all Founders without counting against your storage. The 125GB is your personal cloud drive: upload your own project files, exports, work-in-progress, or anything else. It functions like Google Drive, not just a download folder.",
+      "The 125GB is your personal cloud drive: upload your own project files, exports, work-in-progress, or anything else. It functions like Google Drive, not just a download folder.",
     cta: undefined,
   },
   {
-    category: "THE VAULT",
+    category: "THE ASSETS",
     question: "How often do new assets drop, and do I get them automatically?",
     answer:
-      "New assets are added weekly — sometimes a single complex scene, sometimes a batch of models or gobos. Every drop is automatically included in your Founder access at no extra cost. There is no upsell, no 'Premium Vault' tier above Founder. You get everything that ships, forever.",
+      "New assets are added weekly — sometimes a single complex scene, sometimes a batch of models or gobos. Every drop is automatically included in your plan access at no extra cost. There is no upsell, no 'Premium Vault' tier above Founder. You get everything that ships, forever.",
     cta: undefined,
   },
 
@@ -98,7 +84,7 @@ const faqs: FAQ[] = [
     category: "LICENSING",
     question: "Can I use these in commercial projects I get paid for?",
     answer:
-      "Yes. The full commercial license covers client work, sold products, freelance deliverables, advertising, film, broadcast, architecture visualization, and social media. No attribution required. No royalty structure. No per-project or per-seat fees. Use as many assets in as many projects as you want.",
+      "Yes. The full commercial license covers client work, sold products, freelance deliverables, advertising, film, broadcast, architecture visualization, and social media. No per-project or per-seat fees. Use as many assets in as many projects as you want.",
     cta: undefined,
   },
   {
@@ -112,7 +98,7 @@ const faqs: FAQ[] = [
     category: "LICENSING",
     question: "Can I use assets in a Unity or Unreal Engine game I sell commercially?",
     answer:
-      "Yes. Commercial game development is explicitly covered by the license. .fbx, .obj, and .usdz formats are included alongside .blend for direct engine import. Unreal Engine, Unity, Godot, and proprietary engines are all in scope. No engine-specific licensing restrictions apply.",
+      "Yes. Commercial game development is explicitly covered by the license. .fbx, .obj, and more formats are included alongside .blend for direct engine import. Unreal Engine, Unity, Godot, and proprietary engines are all in scope. No engine specific licensing restrictions apply.",
     cta: undefined,
   },
   {
@@ -124,32 +110,28 @@ const faqs: FAQ[] = [
   },
 
   // TECHNICAL
-  {
-    category: "TECHNICAL",
-    question: "What file formats are included with each asset type?",
-    answer:
-      "3D models and scenes: .blend (native), .fbx, .obj. Gobo textures: .exr (16/32-bit) and .png at 4K or 8K. Blender add-ons: .py files for direct installation. Geometry nodes: .blend with linked, reusable node groups. Animated mockups: .blend with pre-rigged timelines and baked cloth simulations.",
-    cta: undefined,
-  },
+  
   {
     category: "TECHNICAL",
     question: "Which Blender version do the add-ons support?",
     answer:
-      "Blender 4.0 and above. We release compatibility updates within 14 days of every major Blender version release. All four add-ons — Pure Bake, StashOps, CineOps, and Scatter Pro — follow the same update schedule. Legacy support for Blender 3.x is not maintained.",
+      "Blender 4.0 and above. We release compatibility updates within 14 days of every major Blender version release. All add-ons follow the same update schedule. Legacy support for Blender 3.x is not maintained.",
     cta: undefined,
   },
+
   {
     category: "TECHNICAL",
-    question: "Do the add-ons work on Mac, Windows, and Linux?",
+    question: "Are STYLARX Assets compatible with any software?",
     answer:
-      "Yes. All four add-ons are platform-independent Python scripts that install identically on macOS (Apple Silicon and Intel), Windows 10/11, and Linux distributions. No additional dependencies, runtime installations, or system-specific configuration required.",
+      "Yes. All Assets are provided in universal formats (like .blend, FBX, OBJ, PNG, etc) and are compatible with tools like Blender, Unreal, Unity, Maya, Houdini, Photoshop, and more",
     cta: undefined,
   },
+  
   {
     category: "TECHNICAL",
     question: "What is the refund policy?",
     answer:
-      "7-day full refund if you have not downloaded any assets. Because our products are digital files, refunds are not issued after downloads begin — this is a firm policy, not a negotiation point. If you encounter a genuine technical issue or believe there's been an error, contact us before initiating a dispute and we'll resolve it directly.",
+      "Due to the digital nature of our products, we don't offer refunds.",
     cta: { label: "Contact Support", href: "/contact" },
   },
 ]
@@ -383,9 +365,6 @@ export default function FAQPage() {
               <Link href="/shop">Browse the Asset Vault</Link>
             </Button>
           </div>
-          <p className="mt-6 text-xs text-muted-foreground">
-            7-day refund · No account required · Instant vault access
-          </p>
         </div>
       </section>
 
