@@ -44,11 +44,11 @@ const faqs = [
   },
   {
     question: "Is there a refund policy?",
-    answer: "Due to the digital nature of our products, we offer refunds within 7 days if you haven't downloaded any assets."
+    answer: "Due to the digital nature of our products, we don't offer refunds."
   },
   {
     question: "How do I access the assets?",
-    answer: "After purchase, you'll get instant access to our member portal where you can browse and download all assets."
+    answer: "After purchase, you'll get instant access to our Asset Marketplace browse and download all assets + Full Access to the AI Toolkit on stylarx.app."
   },
 ]
 
@@ -281,7 +281,7 @@ export default function PricingPage() {
               Ready to level up your 3D workflow?
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              Join 23 other founders who locked in lifetime access at Tier 1 pricing.
+              Join other founders who locked in lifetime access at Tier 1 pricing.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Button
