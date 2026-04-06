@@ -1,51 +1,86 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useParams, notFound } from "next/navigation"
 import { supabase, mapProductToAsset } from "@/lib/supabase"
+import type { Product } from "@/lib/supabase"
 import { formatColor, categoryMeta, PLAN_MAP } from "@/lib/assets"
-import { notFound } from "next/navigation"
+import type { Asset } from "@/lib/assets"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { AddToCartButton } from "@/components/add-to-cart-button"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Lock, Download, FileBox, ChevronDown, Package, AlertTriangle } from "lucide-react"
+import { ArrowLeft, Lock, Download, FileBox, ChevronDown, Package, AlertTriangle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-export const dynamic = "force-dynamic"
+export default function ProductPage() {
+  const params = useParams()
+  const slug = params.slug as string
 
-export default async function ProductPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>
-}) {
-  const { slug } = await params
+  const [asset, setAsset] = useState<Asset | null>(null)
+  const [related, setRelated] = useState<Asset[]>([])
+  const [gallery, setGallery] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [missing, setMissing] = useState(false)
 
-  const { data: productData, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("slug", slug)
-    .single()
+  useEffect(() => {
+    if (!slug) return
 
-  if (error || !productData) notFound()
+    async function fetchProduct() {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("slug", slug)
+        .single()
 
-  const asset = mapProductToAsset(productData)
+      if (error || !data) {
+        setMissing(true)
+        setLoading(false)
+        return
+      }
+
+      const mapped = mapProductToAsset(data as Product)
+      setAsset(mapped)
+
+      // Build gallery
+      const imgs: string[] = [data.image_url ?? "/placeholder.jpg"]
+      if (Array.isArray(data.extra_images)) imgs.push(...data.extra_images)
+      while (imgs.length < 4) imgs.push(data.image_url ?? "/placeholder.jpg")
+      setGallery(imgs)
+
+      // Fetch related
+      const { data: relData } = await supabase
+        .from("products")
+        .select("*")
+        .eq("category", data.category)
+        .neq("id", data.id)
+        .limit(4)
+      setRelated((relData ?? []).map((p) => mapProductToAsset(p as Product)))
+
+      setLoading(false)
+    }
+
+    fetchProduct()
+  }, [slug])
+
+  if (!loading && missing) notFound()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="flex items-center justify-center pt-48">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!asset) return null
+
   const categoryLabel = categoryMeta[asset.category]?.label ?? asset.category
   const planInfo = asset.required_plan_uid ? PLAN_MAP[asset.required_plan_uid] : null
-
-  // Build gallery from extra_images + main image
-  const gallery: string[] = [
-    asset.image_url ?? "/placeholder.jpg",
-    ...(asset.extra_images ?? []),
-  ]
-  // Pad to 4 for the thumbnail strip
-  while (gallery.length < 4) gallery.push(asset.image_url ?? "/placeholder.jpg")
-
-  const { data: relatedData } = await supabase
-    .from("products")
-    .select("*")
-    .eq("category", asset.category)
-    .neq("id", asset.id)
-    .limit(4)
-
-  const related = (relatedData ?? []).map(mapProductToAsset)
 
   return (
     <div className="min-h-screen bg-background">
@@ -71,7 +106,6 @@ export default async function ProductPage({
         <div className="grid gap-12 lg:grid-cols-[1fr_380px]">
           {/* Left — preview */}
           <div className="flex flex-col gap-6">
-            {/* Primary preview */}
             <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-border bg-secondary/30">
               <Image
                 src={gallery[0]}
@@ -80,8 +114,6 @@ export default async function ProductPage({
                 className="object-cover"
                 unoptimized
               />
-
-              {/* Badge row */}
               <div className="absolute left-4 top-4 flex items-center gap-2">
                 <span className="rounded border border-border/60 bg-background/80 px-2.5 py-1 font-mono text-xs font-medium text-foreground backdrop-blur-sm">
                   [{asset.category}]
@@ -121,7 +153,6 @@ export default async function ProductPage({
 
           {/* Right — info panel */}
           <div className="flex flex-col gap-6">
-            {/* Title block */}
             <div>
               <p className="font-mono text-xs font-medium uppercase tracking-widest text-muted-foreground">
                 — {categoryLabel}
@@ -129,7 +160,6 @@ export default async function ProductPage({
               <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
                 {asset.name}
               </h1>
-              {/* Access tier badge */}
               {asset.free ? (
                 <span className="mt-3 inline-flex items-center rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-mono text-xs text-emerald-500">
                   Free Access
@@ -184,7 +214,7 @@ export default async function ProductPage({
               </div>
             </div>
 
-            {/* Disclaimer accordion */}
+            {/* Disclaimer */}
             <details className="group rounded-xl border border-border bg-card/50">
               <summary className="flex cursor-pointer list-none items-center justify-between p-5">
                 <div className="flex items-center gap-2">
@@ -230,7 +260,6 @@ export default async function ProductPage({
             <div className="flex flex-col gap-3">
               <AddToCartButton asset={asset} />
 
-              {/* Anonymous: show Unlock */}
               <div data-o-anonymous>
                 <Button
                   size="lg"
@@ -249,7 +278,6 @@ export default async function ProductPage({
                 </Button>
               </div>
 
-              {/* Authenticated + correct plan: show Download */}
               {asset.free ? (
                 <div data-o-authenticated>
                   <Button

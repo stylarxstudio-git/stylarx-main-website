@@ -179,17 +179,34 @@ export function Header() {
           </div>
         </div>
 
-        <button
-          className="flex items-center justify-center md:hidden"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle menu"
-        >
-          {mobileMenuOpen ? (
-            <X className="h-6 w-6 text-foreground" />
-          ) : (
-            <Menu className="h-6 w-6 text-foreground" />
-          )}
-        </button>
+        <div className="flex items-center gap-1 md:hidden">
+          {/* Cart icon — mobile */}
+          <button
+            onClick={openCart}
+            className="relative flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-all duration-200 hover:bg-secondary hover:text-foreground"
+            aria-label="Open cart"
+          >
+            <ShoppingBag className="h-[18px] w-[18px]" />
+            {count > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary font-mono text-[10px] font-bold text-primary-foreground">
+                {count > 9 ? "9+" : count}
+              </span>
+            )}
+          </button>
+
+          {/* Hamburger */}
+          <button
+            className="flex items-center justify-center"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? (
+              <X className="h-6 w-6 text-foreground" />
+            ) : (
+              <Menu className="h-6 w-6 text-foreground" />
+            )}
+          </button>
+        </div>
       </div>
 
       {mobileMenuOpen && (

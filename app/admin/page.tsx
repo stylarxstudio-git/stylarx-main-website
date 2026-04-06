@@ -106,8 +106,8 @@ export default function AdminPage() {
   function openEdit(product: Product) {
     setEditingId(product.id)
     setForm({
-      name: product.name,
-      slug: product.slug,
+      name: product.name ?? "",
+      slug: product.slug ?? "",
       description: product.description ?? "",
       image_url: product.image_url ?? "",
       extra_images: product.extra_images ?? [],
@@ -210,9 +210,19 @@ export default function AdminPage() {
   async function handleDelete(id: number) {
     if (!window.confirm("Delete this product? This cannot be undone.")) return
     setDeleting(id)
-    const { error } = await supabase.from("products").delete().eq("id", id)
-    if (error) alert(`Delete failed: ${error.message}`)
+    const { data: deleted, error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", id)
+      .select("id")
     setDeleting(null)
+    if (error) {
+      alert(`Delete failed: ${error.message}`)
+    } else if (!deleted || deleted.length === 0) {
+      alert(
+        "Nothing was deleted.\n\nThis is usually a Row Level Security (RLS) issue.\n\nFix: Go to Supabase Dashboard → Table Editor → products → RLS → Disable RLS (or add a policy that allows DELETE for the anon role)."
+      )
+    }
     fetchProducts()
   }
 
