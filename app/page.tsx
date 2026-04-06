@@ -13,7 +13,7 @@ const pricingFeatures = [
   "Full Commercial License",
   "All Future Drops, Tools & Assets",
   "300 AI Credits / month",
-  "Full Access to AI Tool",
+  "Full Access to AI Toolkit",
   "125 GB Vault Storage",
   "3D Mentor: 300 msgs / 3hrs",
   "Game Dev Blueprint: 50 msgs / 3hrs",

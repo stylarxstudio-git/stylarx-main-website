@@ -10,10 +10,13 @@ import { Footer } from "@/components/footer"
 const features = [
   "Full Commercial License",
   "All Future Drops, Tools & Assets",
-  "Pay Once, Access Forever",
+  "300 AI Credits / month",
+  "Full Access to AI Toolkit",
+  "125 GB Vault Storage",
+  "3D Mentor: 300 msgs / 3hrs",
+  "Game Dev Blueprint: 50 msgs / 3hrs",
   "Premium Support",
-  "Early Access to New Releases",
-  "Exclusive Discord Community",
+  "Pay Once, Access Forever",
 ]
 
 const tiers = [
@@ -203,14 +206,15 @@ export default function PricingPage() {
             style={{ transitionDelay: "500ms" }}
           >
             {[
-              { title: "Full Asset Marketplace Access", description: "500+ premium assets across 7 categories — models, mockups, scenes, gobos, add-ons, and more" },
-              { title: "Every AI Tool", description: "All 13 AI tools on Stylarx.app — Gobo Gen, Scene Stager, PBR Gen, SFX Gen, 3D Mentor, and more" },
-              { title: "300 AI Credits / Month", description: "Generate gobos, scenes, PBR maps, SFX, and animations every month" },
-              { title: "Weekly New Drops", description: "Fresh assets and tools added every week" },
+              { title: "Full Asset Marketplace Access", description: "140+ premium assets across 7 categories — models, mockups, scenes, gobos, add-ons, and more" },
+              { title: "Every AI Tool", description: "10+ AI tools on Stylarx.app — Gobo Gen, Scene Stager, PBR Gen, SFX Gen, 3D Mentor, and more" },
+              { title: "300 AI Credits / Month", description: "Generate gobos, scenes, PBR maps, SFX, and much more every month" },
               { title: "Commercial License", description: "Use everything in client work, products, and commercial projects" },
               { title: "Blender Add-ons", description: "Pure Bake, StashOps, CineOps, Scatter Pro — all included" },
-              { title: "Gobo Textures", description: "50+ professional cinematic lighting textures" },
               { title: "Priority Support", description: "Get help when you need it" },
+              { title: "125 GB Vault Storage", description: "Store 125 GB worth of Assets in the Vault and Access them Anywhere." },
+              { title: "Game Dev Blueprint", description: "Turn Raw Ideas into a Structured Game Design Document Instantly." },
+              { title: "3D Mentor", description: "Master Blender, Unreal, Unity, and more with 3D Mentor that Speaks every 3D Language" },
             ].map((item, index) => (
               <div 
                 key={item.title}
