@@ -78,6 +78,13 @@ export default function ShopPage() {
           >
             {[
               { value: "140+",   label: "Total Assets"      },
+              { value: "51",     label: "3D Models"         },
+              { value: "50",     label: "Gobo Textures"     },
+              { value: "4",      label: "Blender Add-ons"   },
+              { value: "7",      label: "Scenes"            },
+              { value: "5",      label: "Geo Node"          },
+              { value: "50",     label: "Gobo"              },
+              { value: "30",      label: "Mockups"   },
               { value: "Weekly", label: "New Drops"         },
             ].map((stat) => (
               <div key={stat.label} className="flex flex-col">
