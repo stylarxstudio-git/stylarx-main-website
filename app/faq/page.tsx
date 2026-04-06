@@ -342,7 +342,7 @@ export default function FAQPage() {
             Now Make the Call.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
-            227 Tier 1 slots remain at $59. After that, it's $79. Then $99.
+            Lock in the $59 rate before the next tier hits at $99. Then $149.
             Same access either way — just a different number on the receipt.
           </p>
           <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
@@ -352,7 +352,7 @@ export default function FAQPage() {
               asChild
             >
               <Link href="/pricing#tier-alpha">
-                Lock In $59 — Founder Alpha
+                Lock In $59 — Founder Plan
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -362,7 +362,7 @@ export default function FAQPage() {
               className="border-border hover:border-foreground/40"
               asChild
             >
-              <Link href="/shop">Browse the Asset Vault</Link>
+              <Link href="/shop">Browse the Assets</Link>
             </Button>
           </div>
         </div>
