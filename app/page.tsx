@@ -19,7 +19,6 @@ const pricingFeatures = [
   "Project Manager: 50 msgs / 3hrs",
   "Premium Support",
   "Pay Once, Access Forever",
-  "Premium Support",
 ]
 
 const pricingTiers = [
