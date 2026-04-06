@@ -84,8 +84,8 @@ export function Hero() {
           }`}
         >
           {[
-            { value: "500+", label: "Premium Assets" },
-            { value: "23/250", label: "Founder Slots" },
+            { value: "140+", label: "Premium Assets" },
+            { value: "AI Tools", label: "10+" },
             { value: "Forever", label: "Lifetime Access" },
             { value: "Weekly", label: "New Releases" },
           ].map((stat, index) => (
