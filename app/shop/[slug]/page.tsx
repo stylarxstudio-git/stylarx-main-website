@@ -1,5 +1,5 @@
 import { supabase, mapProductToAsset } from "@/lib/supabase"
-import { formatColor, categoryMeta } from "@/lib/assets"
+import { formatColor, categoryMeta, PLAN_MAP } from "@/lib/assets"
 import { notFound } from "next/navigation"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -9,7 +9,7 @@ import Link from "next/link"
 import { ArrowLeft, Lock, Download, FileBox, ChevronDown, Package, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 export default async function ProductPage({
   params,
@@ -28,6 +28,15 @@ export default async function ProductPage({
 
   const asset = mapProductToAsset(productData)
   const categoryLabel = categoryMeta[asset.category]?.label ?? asset.category
+  const planInfo = asset.required_plan_uid ? PLAN_MAP[asset.required_plan_uid] : null
+
+  // Build gallery from extra_images + main image
+  const gallery: string[] = [
+    asset.image_url ?? "/placeholder.jpg",
+    ...(asset.extra_images ?? []),
+  ]
+  // Pad to 4 for the thumbnail strip
+  while (gallery.length < 4) gallery.push(asset.image_url ?? "/placeholder.jpg")
 
   const { data: relatedData } = await supabase
     .from("products")
@@ -65,7 +74,7 @@ export default async function ProductPage({
             {/* Primary preview */}
             <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-border bg-secondary/30">
               <Image
-                src={asset.image_url ?? "/placeholder.jpg"}
+                src={gallery[0]}
                 alt={asset.name}
                 fill
                 className="object-cover"
@@ -92,13 +101,13 @@ export default async function ProductPage({
 
             {/* Thumbnail strip */}
             <div className="grid grid-cols-4 gap-3">
-              {[0, 1, 2, 3].map((i) => (
+              {gallery.slice(0, 4).map((src, i) => (
                 <div
                   key={i}
                   className="aspect-[4/3] cursor-pointer overflow-hidden rounded-xl border border-border bg-secondary/30 transition-all duration-150 hover:border-foreground/30"
                 >
                   <Image
-                    src={asset.image_url ?? "/placeholder.jpg"}
+                    src={src}
                     alt={`${asset.name} preview ${i + 1}`}
                     width={200}
                     height={150}
@@ -120,6 +129,16 @@ export default async function ProductPage({
               <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
                 {asset.name}
               </h1>
+              {/* Access tier badge */}
+              {asset.free ? (
+                <span className="mt-3 inline-flex items-center rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-mono text-xs text-emerald-500">
+                  Free Access
+                </span>
+              ) : planInfo ? (
+                <span className={`mt-3 inline-flex items-center rounded border px-2 py-0.5 font-mono text-xs ${planInfo.color}`}>
+                  {planInfo.label} Required
+                </span>
+              ) : null}
               <p className="mt-3 text-base leading-relaxed text-muted-foreground">
                 {asset.description}
               </p>
@@ -155,7 +174,11 @@ export default async function ProductPage({
                     Access
                   </div>
                   <span className="font-mono text-xs text-foreground">
-                    {asset.free ? "Free — No account required" : "Founder Access required"}
+                    {asset.free
+                      ? "Free — No account required"
+                      : planInfo
+                      ? `${planInfo.label} required`
+                      : "Member access required"}
                   </span>
                 </div>
               </div>
@@ -207,7 +230,7 @@ export default async function ProductPage({
             <div className="flex flex-col gap-3">
               <AddToCartButton asset={asset} />
 
-              {/* Anonymous: always show Unlock */}
+              {/* Anonymous: show Unlock */}
               <div data-o-anonymous>
                 <Button
                   size="lg"
@@ -217,7 +240,11 @@ export default async function ProductPage({
                 >
                   <Link href="/pricing">
                     <Lock className="mr-2 h-4 w-4" />
-                    {asset.free ? "Create Account to Download" : "Unlock with Founder Access — $59"}
+                    {asset.free
+                      ? "Create Account to Download"
+                      : planInfo
+                      ? `Unlock — Requires ${planInfo.label}`
+                      : "Unlock with Member Access"}
                   </Link>
                 </Button>
               </div>

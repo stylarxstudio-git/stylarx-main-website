@@ -1,21 +1,32 @@
 "use client"
-export const dynamic = "force-dynamic";
 
-import { useState, useEffect, useCallback } from "react"
-import { supabase } from "@/lib/supabase"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { supabase, uploadProductImage } from "@/lib/supabase"
 import type { Product } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
-import { Plus, Pencil, Trash2, X, LogOut, Save, Loader2 } from "lucide-react"
+import { Plus, Pencil, Trash2, X, LogOut, Save, Loader2, Upload, ImagePlus } from "lucide-react"
+import Image from "next/image"
 
 const ADMIN_PASSWORD = "NevanSamra0214"
 const CATEGORIES = ["SCENE", "MODEL", "MOCKUP", "GOBO", "ADDON", "GEO NODE"]
 const FORMAT_OPTIONS = [".blend", ".fbx", ".obj", ".exr", ".png", ".py", ".usdz", ".mp4", ".zip"]
 
-const emptyForm: Omit<Product, "id" | "created_at"> = {
+const PLANS = [
+  { label: "— None (no plan required)", uid: "" },
+  { label: "Free Plan",     uid: "OW4RepQg" },
+  { label: "Standard Plan", uid: "496z3A9X" },
+  { label: "Pro Plan",      uid: "y9qbyNWA" },
+  { label: "Founder Plan",  uid: "7ma2MXQE" },
+]
+
+type FormData = Omit<Product, "id" | "created_at">
+
+const emptyForm: FormData = {
   name: "",
   slug: "",
   description: "",
   image_url: "",
+  extra_images: [],
   category: "MODEL",
   formats: [],
   meta: "",
@@ -39,15 +50,19 @@ export default function AdminPage() {
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [form, setForm] = useState<Omit<Product, "id" | "created_at">>(emptyForm)
+  const [form, setForm] = useState<FormData>(emptyForm)
   const [whatYouGetInput, setWhatYouGetInput] = useState("")
   const [formError, setFormError] = useState("")
 
-  // Check localStorage on mount
+  // Image upload state
+  const [mainImgUploading, setMainImgUploading] = useState(false)
+  const [extraImgsUploading, setExtraImgsUploading] = useState(false)
+  const mainImgRef = useRef<HTMLInputElement>(null)
+  const extraImgsRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("stylarx_admin_authed")
-      if (stored === "true") setAuthed(true)
+      if (localStorage.getItem("stylarx_admin_authed") === "true") setAuthed(true)
     }
   }, [])
 
@@ -95,6 +110,7 @@ export default function AdminPage() {
       slug: product.slug,
       description: product.description ?? "",
       image_url: product.image_url ?? "",
+      extra_images: product.extra_images ?? [],
       category: product.category,
       formats: product.formats ?? [],
       meta: product.meta ?? "",
@@ -116,7 +132,6 @@ export default function AdminPage() {
     setFormError("")
   }
 
-  
   function handleFormatToggle(fmt: string) {
     setForm((prev) => ({
       ...prev,
@@ -124,6 +139,35 @@ export default function AdminPage() {
         ? prev.formats.filter((f) => f !== fmt)
         : [...prev.formats, fmt],
     }))
+  }
+
+  async function handleMainImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setMainImgUploading(true)
+    const url = await uploadProductImage(file, "main")
+    if (url) setForm((p) => ({ ...p, image_url: url }))
+    else setFormError("Image upload failed. Check your Supabase storage bucket 'product-images'.")
+    setMainImgUploading(false)
+    if (mainImgRef.current) mainImgRef.current.value = ""
+  }
+
+  async function handleExtraImagesUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
+    setExtraImgsUploading(true)
+    const urls: string[] = []
+    for (const file of files) {
+      const url = await uploadProductImage(file, "gallery")
+      if (url) urls.push(url)
+    }
+    setForm((p) => ({ ...p, extra_images: [...(p.extra_images ?? []), ...urls] }))
+    setExtraImgsUploading(false)
+    if (extraImgsRef.current) extraImgsRef.current.value = ""
+  }
+
+  function removeExtraImage(idx: number) {
+    setForm((p) => ({ ...p, extra_images: (p.extra_images ?? []).filter((_, i) => i !== idx) }))
   }
 
   async function handleSave() {
@@ -140,6 +184,7 @@ export default function AdminPage() {
       required_plan_uid: form.required_plan_uid || null,
       lemonsqueezy_url: form.lemonsqueezy_url || null,
       disclaimer: form.disclaimer || null,
+      extra_images: (form.extra_images ?? []).length > 0 ? form.extra_images : null,
       what_you_will_get: whatYouGetInput
         .split("\n")
         .map((s) => s.trim())
@@ -155,7 +200,7 @@ export default function AdminPage() {
 
     setSaving(false)
     if (error) {
-      setFormError(error.message)
+      setFormError(`Supabase error: ${error.message}`)
     } else {
       closeModal()
       fetchProducts()
@@ -163,9 +208,10 @@ export default function AdminPage() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Delete this product? This cannot be undone.")) return
+    if (!window.confirm("Delete this product? This cannot be undone.")) return
     setDeleting(id)
-    await supabase.from("products").delete().eq("id", id)
+    const { error } = await supabase.from("products").delete().eq("id", id)
+    if (error) alert(`Delete failed: ${error.message}`)
     setDeleting(null)
     fetchProducts()
   }
@@ -190,9 +236,7 @@ export default function AdminPage() {
           {passwordError && (
             <p className="mb-3 font-mono text-xs text-red-500">Incorrect password.</p>
           )}
-          <Button className="w-full" onClick={handleLogin}>
-            Enter
-          </Button>
+          <Button className="w-full" onClick={handleLogin}>Enter</Button>
         </div>
       </div>
     )
@@ -213,7 +257,7 @@ export default function AdminPage() {
               <Plus className="mr-1.5 h-3.5 w-3.5" />
               Add Product
             </Button>
-            <Button size="sm" variant="ghost" onClick={handleLogout}>
+            <Button size="sm" variant="ghost" onClick={handleLogout} title="Logout">
               <LogOut className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -238,33 +282,19 @@ export default function AdminPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/30">
-                  <th className="px-4 py-3 text-left font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Name
-                  </th>
-                  <th className="px-4 py-3 text-left font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Category
-                  </th>
-                  <th className="px-4 py-3 text-left font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Slug
-                  </th>
-                  <th className="px-4 py-3 text-center font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Free
-                  </th>
-                  <th className="px-4 py-3 text-center font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    New
-                  </th>
-                  <th className="px-4 py-3 text-right font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Actions
-                  </th>
+                  <th className="px-4 py-3 text-left font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">Name</th>
+                  <th className="px-4 py-3 text-left font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">Category</th>
+                  <th className="hidden px-4 py-3 text-left font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground sm:table-cell">Slug</th>
+                  <th className="px-4 py-3 text-center font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">Free</th>
+                  <th className="px-4 py-3 text-center font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">New</th>
+                  <th className="px-4 py-3 text-right font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {products.map((product, i) => (
                   <tr
                     key={product.id}
-                    className={`border-b border-border/50 transition-colors hover:bg-secondary/20 ${
-                      i === products.length - 1 ? "border-b-0" : ""
-                    }`}
+                    className={`border-b border-border/50 transition-colors hover:bg-secondary/20 ${i === products.length - 1 ? "border-b-0" : ""}`}
                   >
                     <td className="px-4 py-3 font-medium text-foreground">{product.name}</td>
                     <td className="px-4 py-3">
@@ -272,23 +302,19 @@ export default function AdminPage() {
                         {product.category}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                    <td className="hidden px-4 py-3 font-mono text-xs text-muted-foreground sm:table-cell">
                       {product.slug}
                     </td>
                     <td className="px-4 py-3 text-center">
                       {product.free ? (
-                        <span className="rounded bg-emerald-500/10 px-2 py-0.5 font-mono text-xs text-emerald-500">
-                          FREE
-                        </span>
+                        <span className="rounded bg-emerald-500/10 px-2 py-0.5 font-mono text-xs text-emerald-500">FREE</span>
                       ) : (
                         <span className="font-mono text-xs text-muted-foreground/40">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-center">
                       {product.is_new ? (
-                        <span className="rounded bg-foreground/10 px-2 py-0.5 font-mono text-xs text-foreground">
-                          NEW
-                        </span>
+                        <span className="rounded bg-foreground/10 px-2 py-0.5 font-mono text-xs text-foreground">NEW</span>
                       ) : (
                         <span className="font-mono text-xs text-muted-foreground/40">—</span>
                       )}
@@ -298,13 +324,15 @@ export default function AdminPage() {
                         <button
                           onClick={() => openEdit(product)}
                           className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                          title="Edit"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete(product.id)}
                           disabled={deleting === product.id}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500 disabled:opacity-50"
+                          title="Delete"
                         >
                           {deleting === product.id ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -324,224 +352,284 @@ export default function AdminPage() {
 
       {/* Add / Edit Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 px-4 py-8 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-2xl border border-border bg-background shadow-2xl">
-            {/* Modal header */}
-            <div className="flex items-center justify-between border-b border-border px-6 py-4">
-              <h2 className="font-semibold text-foreground">
-                {editingId !== null ? "Edit Product" : "Add Product"}
-              </h2>
-              <button
-                onClick={closeModal}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Modal body */}
-            <div className="space-y-5 px-6 py-6">
-              {/* Name + Slug */}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block font-mono text-xs text-muted-foreground">
-                    Name *
-                  </label>
-                  <input
-                    value={form.name}
-                    onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block font-mono text-xs text-muted-foreground">
-                    Slug *
-                  </label>
-                  <input
-                    value={form.slug}
-                    onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value }))}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm text-foreground outline-none focus:border-foreground/40"
-                    placeholder="my-product-slug"
-                  />
-                </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="mb-1.5 block font-mono text-xs text-muted-foreground">
-                  Description
-                </label>
-                <textarea
-                  rows={3}
-                  value={form.description ?? ""}
-                  onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40 resize-none"
-                />
-              </div>
-
-              {/* Image URL + Meta */}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block font-mono text-xs text-muted-foreground">
-                    Image URL
-                  </label>
-                  <input
-                    value={form.image_url ?? ""}
-                    onChange={(e) => setForm((p) => ({ ...p, image_url: e.target.value }))}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40"
-                    placeholder="https://..."
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block font-mono text-xs text-muted-foreground">
-                    Meta
-                  </label>
-                  <input
-                    value={form.meta ?? ""}
-                    onChange={(e) => setForm((p) => ({ ...p, meta: e.target.value }))}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40"
-                    placeholder="e.g. 42K polys · PBR"
-                  />
-                </div>
-              </div>
-
-              {/* Category */}
-              <div>
-                <label className="mb-1.5 block font-mono text-xs text-muted-foreground">
-                  Category
-                </label>
-                <select
-                  value={form.category}
-                  onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40"
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm">
+          <div className="flex min-h-full items-start justify-center px-4 py-8">
+            <div className="w-full max-w-2xl rounded-2xl border border-border bg-background shadow-2xl">
+              {/* Modal header */}
+              <div className="flex items-center justify-between border-b border-border px-6 py-4">
+                <h2 className="font-semibold text-foreground">
+                  {editingId !== null ? "Edit Product" : "Add Product"}
+                </h2>
+                <button
+                  onClick={closeModal}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                 >
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                  <X className="h-4 w-4" />
+                </button>
               </div>
 
-              {/* Formats */}
-              <div>
-                <label className="mb-2 block font-mono text-xs text-muted-foreground">
-                  File Formats
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {FORMAT_OPTIONS.map((fmt) => (
-                    <button
-                      key={fmt}
-                      type="button"
-                      onClick={() => handleFormatToggle(fmt)}
-                      className={`rounded border px-2.5 py-1 font-mono text-xs transition-colors ${
-                        form.formats.includes(fmt)
-                          ? "border-foreground bg-foreground text-background"
-                          : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
-                      }`}
+              {/* Modal body */}
+              <div className="space-y-5 px-6 py-6">
+                {/* Name + Slug */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block font-mono text-xs text-muted-foreground">Name *</label>
+                    <input
+                      value={form.name}
+                      onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block font-mono text-xs text-muted-foreground">Slug *</label>
+                    <input
+                      value={form.slug}
+                      onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value }))}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm text-foreground outline-none focus:border-foreground/40"
+                      placeholder="my-product-slug"
+                    />
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="mb-1.5 block font-mono text-xs text-muted-foreground">Description</label>
+                  <textarea
+                    rows={3}
+                    value={form.description ?? ""}
+                    onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                    className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40"
+                  />
+                </div>
+
+                {/* Main Image Upload */}
+                <div>
+                  <label className="mb-2 block font-mono text-xs text-muted-foreground">Main Image</label>
+                  <div className="flex items-start gap-3">
+                    {form.image_url && (
+                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-border bg-secondary/30">
+                        <Image src={form.image_url} alt="Main" fill className="object-cover" unoptimized />
+                        <button
+                          onClick={() => setForm((p) => ({ ...p, image_url: "" }))}
+                          className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-background/80 text-foreground"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex flex-1 flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={() => mainImgRef.current?.click()}
+                        disabled={mainImgUploading}
+                        className="flex items-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground disabled:opacity-50"
+                      >
+                        {mainImgUploading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                        {mainImgUploading ? "Uploading..." : "Upload Main Image"}
+                      </button>
+                      <input
+                        ref={mainImgRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleMainImageUpload}
+                        className="hidden"
+                      />
+                      <span className="font-mono text-xs text-muted-foreground/50">Or paste a URL:</span>
+                      <input
+                        value={form.image_url ?? ""}
+                        onChange={(e) => setForm((p) => ({ ...p, image_url: e.target.value }))}
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40"
+                        placeholder="https://..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Extra Images Upload */}
+                <div>
+                  <label className="mb-2 block font-mono text-xs text-muted-foreground">
+                    Extra Photos Gallery
+                  </label>
+                  {(form.extra_images ?? []).length > 0 && (
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {(form.extra_images ?? []).map((url, idx) => (
+                        <div key={idx} className="relative h-16 w-16 overflow-hidden rounded-lg border border-border bg-secondary/30">
+                          <Image src={url} alt={`Extra ${idx + 1}`} fill className="object-cover" unoptimized />
+                          <button
+                            onClick={() => removeExtraImage(idx)}
+                            className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-background/80 text-foreground"
+                          >
+                            <X className="h-2.5 w-2.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => extraImgsRef.current?.click()}
+                    disabled={extraImgsUploading}
+                    className="flex items-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground disabled:opacity-50"
+                  >
+                    {extraImgsUploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ImagePlus className="h-4 w-4" />
+                    )}
+                    {extraImgsUploading ? "Uploading..." : "Add Gallery Photos"}
+                  </button>
+                  <input
+                    ref={extraImgsRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleExtraImagesUpload}
+                    className="hidden"
+                  />
+                </div>
+
+                {/* Meta + Category */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block font-mono text-xs text-muted-foreground">Meta</label>
+                    <input
+                      value={form.meta ?? ""}
+                      onChange={(e) => setForm((p) => ({ ...p, meta: e.target.value }))}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40"
+                      placeholder="e.g. 42K polys · PBR"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block font-mono text-xs text-muted-foreground">Category</label>
+                    <select
+                      value={form.category}
+                      onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40"
                     >
-                      {fmt}
-                    </button>
-                  ))}
+                      {CATEGORIES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
 
-              {/* Required Plan UID + LemonSqueezy URL */}
-              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Formats */}
+                <div>
+                  <label className="mb-2 block font-mono text-xs text-muted-foreground">File Formats</label>
+                  <div className="flex flex-wrap gap-2">
+                    {FORMAT_OPTIONS.map((fmt) => (
+                      <button
+                        key={fmt}
+                        type="button"
+                        onClick={() => handleFormatToggle(fmt)}
+                        className={`rounded border px-2.5 py-1 font-mono text-xs transition-colors ${
+                          form.formats.includes(fmt)
+                            ? "border-foreground bg-foreground text-background"
+                            : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+                        }`}
+                      >
+                        {fmt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Required Plan + Download URL */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block font-mono text-xs text-muted-foreground">Required Plan</label>
+                    <select
+                      value={form.required_plan_uid ?? ""}
+                      onChange={(e) => setForm((p) => ({ ...p, required_plan_uid: e.target.value }))}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40"
+                    >
+                      {PLANS.map((plan) => (
+                        <option key={plan.uid} value={plan.uid}>{plan.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block font-mono text-xs text-muted-foreground">Download URL</label>
+                    <input
+                      value={form.lemonsqueezy_url ?? ""}
+                      onChange={(e) => setForm((p) => ({ ...p, lemonsqueezy_url: e.target.value }))}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40"
+                      placeholder="https://..."
+                    />
+                  </div>
+                </div>
+
+                {/* Disclaimer */}
+                <div>
+                  <label className="mb-1.5 block font-mono text-xs text-muted-foreground">Disclaimer</label>
+                  <textarea
+                    rows={2}
+                    value={form.disclaimer ?? ""}
+                    onChange={(e) => setForm((p) => ({ ...p, disclaimer: e.target.value }))}
+                    className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40"
+                  />
+                </div>
+
+                {/* What You Will Get */}
                 <div>
                   <label className="mb-1.5 block font-mono text-xs text-muted-foreground">
-                    Required Plan UID
+                    What You Will Get{" "}
+                    <span className="text-muted-foreground/50">(one item per line)</span>
                   </label>
-                  <input
-                    value={form.required_plan_uid ?? ""}
-                    onChange={(e) => setForm((p) => ({ ...p, required_plan_uid: e.target.value }))}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm text-foreground outline-none focus:border-foreground/40"
-                    placeholder="e.g. 7ma2MXQE"
+                  <textarea
+                    rows={4}
+                    value={whatYouGetInput}
+                    onChange={(e) => setWhatYouGetInput(e.target.value)}
+                    className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40"
+                    placeholder={"1 .blend file\n4K textures included\nBlender 4.0+"}
                   />
                 </div>
-                <div>
-                  <label className="mb-1.5 block font-mono text-xs text-muted-foreground">
-                    LemonSqueezy / Download URL
+
+                {/* Booleans */}
+                <div className="flex items-center gap-6">
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={form.free}
+                      onChange={(e) => setForm((p) => ({ ...p, free: e.target.checked }))}
+                      className="h-4 w-4 rounded border-border accent-foreground"
+                    />
+                    <span className="font-mono text-xs text-muted-foreground">Free asset</span>
                   </label>
-                  <input
-                    value={form.lemonsqueezy_url ?? ""}
-                    onChange={(e) => setForm((p) => ({ ...p, lemonsqueezy_url: e.target.value }))}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40"
-                    placeholder="https://..."
-                  />
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={form.is_new}
+                      onChange={(e) => setForm((p) => ({ ...p, is_new: e.target.checked }))}
+                      className="h-4 w-4 rounded border-border accent-foreground"
+                    />
+                    <span className="font-mono text-xs text-muted-foreground">Mark as NEW</span>
+                  </label>
                 </div>
-              </div>
 
-              {/* Disclaimer */}
-              <div>
-                <label className="mb-1.5 block font-mono text-xs text-muted-foreground">
-                  Disclaimer
-                </label>
-                <textarea
-                  rows={2}
-                  value={form.disclaimer ?? ""}
-                  onChange={(e) => setForm((p) => ({ ...p, disclaimer: e.target.value }))}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40 resize-none"
-                />
-              </div>
-
-              {/* What You Will Get */}
-              <div>
-                <label className="mb-1.5 block font-mono text-xs text-muted-foreground">
-                  What You Will Get{" "}
-                  <span className="text-muted-foreground/50">(one item per line)</span>
-                </label>
-                <textarea
-                  rows={4}
-                  value={whatYouGetInput}
-                  onChange={(e) => setWhatYouGetInput(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-foreground/40 resize-none"
-                  placeholder={"1 .blend file\n4K textures included\nBlender 4.0+"}
-                />
-              </div>
-
-              {/* Booleans */}
-              <div className="flex items-center gap-6">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.free}
-                    onChange={(e) => setForm((p) => ({ ...p, free: e.target.checked }))}
-                    className="h-4 w-4 rounded border-border accent-foreground"
-                  />
-                  <span className="font-mono text-xs text-muted-foreground">Free asset</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.is_new}
-                    onChange={(e) => setForm((p) => ({ ...p, is_new: e.target.checked }))}
-                    className="h-4 w-4 rounded border-border accent-foreground"
-                  />
-                  <span className="font-mono text-xs text-muted-foreground">Mark as NEW</span>
-                </label>
-              </div>
-
-              {formError && (
-                <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2 font-mono text-xs text-red-500">
-                  {formError}
-                </p>
-              )}
-            </div>
-
-            {/* Modal footer */}
-            <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
-              <Button variant="ghost" size="sm" onClick={closeModal}>
-                Cancel
-              </Button>
-              <Button size="sm" onClick={handleSave} disabled={saving}>
-                {saving ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Save className="mr-1.5 h-3.5 w-3.5" />
+                {formError && (
+                  <p className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-2 font-mono text-xs text-red-500">
+                    {formError}
+                  </p>
                 )}
-                {editingId !== null ? "Save Changes" : "Add Product"}
-              </Button>
+              </div>
+
+              {/* Modal footer */}
+              <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
+                <Button variant="ghost" size="sm" onClick={closeModal}>Cancel</Button>
+                <Button size="sm" onClick={handleSave} disabled={saving || mainImgUploading || extraImgsUploading}>
+                  {saving ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Save className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  {editingId !== null ? "Save Changes" : "Add Product"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

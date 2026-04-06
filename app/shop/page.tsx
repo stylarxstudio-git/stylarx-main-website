@@ -1,15 +1,14 @@
 "use client"
-export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Lock, Download, ArrowRight, SlidersHorizontal, ShoppingBag, Check } from "lucide-react"
+import { Lock, Download, SlidersHorizontal, ShoppingBag, Check } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { useCart } from "@/context/cart-context"
-import { categoryMeta, categoryOrder, formatColor } from "@/lib/assets"
+import { categoryMeta, categoryOrder, formatColor, PLAN_MAP } from "@/lib/assets"
 import type { Asset, Category } from "@/lib/assets"
 import { supabase, mapProductToAsset } from "@/lib/supabase"
 
@@ -49,9 +48,6 @@ export default function ShopPage() {
     activeCategory === "ALL"
       ? assets
       : assets.filter((a) => a.category === activeCategory)
-
-  const currentMeta = categoryMeta[activeCategory]
-  const showingMore = filtered.length < currentMeta.total
 
   return (
     <div className="min-h-screen bg-background">
@@ -126,26 +122,6 @@ export default function ShopPage() {
       {/* Asset Grid */}
       <section className="py-12">
         <div className="mx-auto max-w-7xl px-6">
-          {/* Results header */}
-          <div className="mb-6 flex items-center justify-between">
-            <p className="font-mono text-xs text-muted-foreground">
-              {loading ? (
-                "Loading assets..."
-              ) : (
-                <>
-                  Showing {filtered.length}
-                  {showingMore && ` of ${currentMeta.total}`}{" "}
-                  {currentMeta.label.toLowerCase()}
-                  {showingMore && (
-                    <span className="text-muted-foreground/50">
-                      {" "}— {currentMeta.total - filtered.length} more with Founder access
-                    </span>
-                  )}
-                </>
-              )}
-            </p>
-          </div>
-
           {loading ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
@@ -159,6 +135,8 @@ export default function ShopPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filtered.map((asset, index) => {
                 const inCart = items.some((i) => i.id === asset.id)
+                const planInfo = asset.required_plan_uid ? PLAN_MAP[asset.required_plan_uid] : null
+
                 return (
                   <div
                     key={asset.id}
@@ -201,7 +179,9 @@ export default function ShopPage() {
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                           <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-background/80 px-3 py-2 backdrop-blur-sm">
                             <Lock className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span className="font-mono text-xs text-muted-foreground">FOUNDER ACCESS</span>
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {planInfo?.label ?? "MEMBER ACCESS"}
+                            </span>
                           </div>
                         </div>
                       )}
@@ -209,6 +189,17 @@ export default function ShopPage() {
 
                     {/* Card body */}
                     <div className="flex flex-1 flex-col p-4">
+                      {/* Access tier badge */}
+                      {asset.free ? (
+                        <span className="mb-2 inline-flex w-fit items-center rounded border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-xs text-emerald-500">
+                          Free Access
+                        </span>
+                      ) : planInfo ? (
+                        <span className={`mb-2 inline-flex w-fit items-center rounded border px-1.5 py-0.5 font-mono text-xs ${planInfo.color}`}>
+                          {planInfo.label} Required
+                        </span>
+                      ) : null}
+
                       <Link href={`/shop/${asset.slug}`} className="hover:underline">
                         <h3 className="font-semibold leading-tight text-foreground">{asset.name}</h3>
                       </Link>
@@ -221,7 +212,7 @@ export default function ShopPage() {
 
                       {/* Format tags */}
                       <div className="mt-3 flex flex-wrap gap-1.5">
-                        {Array.isArray(asset.formats) && asset.formats?.map((fmt) => (
+                        {Array.isArray(asset.formats) && asset.formats.map((fmt) => (
                           <span
                             key={fmt}
                             className={`rounded border px-1.5 py-0.5 font-mono text-xs ${formatColor[fmt] ?? "border-border bg-secondary text-muted-foreground"}`}
@@ -232,11 +223,14 @@ export default function ShopPage() {
                       </div>
 
                       {/* CTAs */}
-                      <div className="mt-4 flex flex-col gap-2">
+                      <div className="mt-auto pt-4 flex flex-col gap-2">
                         {/* Add to Cart */}
                         <Button
                           size="sm"
-                          onClick={() => addItem(asset)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (!inCart) addItem(asset)
+                          }}
                           disabled={inCart}
                           className={
                             inCart
@@ -265,7 +259,7 @@ export default function ShopPage() {
                             className="w-full border-border transition-all duration-200 hover:border-foreground/30"
                             asChild
                           >
-                            <a href={asset.lemonsqueezy_url ?? "#"}>
+                            <a href={asset.lemonsqueezy_url ?? "#"} onClick={(e) => e.stopPropagation()}>
                               <Download className="mr-1.5 h-3.5 w-3.5" />
                               Free Download
                             </a>
@@ -279,7 +273,7 @@ export default function ShopPage() {
                           >
                             <Link href="/pricing">
                               <Lock className="mr-1.5 h-3.5 w-3.5" />
-                              Upgrade to a higher plan
+                              {planInfo ? `Requires ${planInfo.label}` : "Unlock Access"}
                             </Link>
                           </Button>
                         )}
@@ -290,70 +284,6 @@ export default function ShopPage() {
               })}
             </div>
           )}
-
-          {/* "More available" overflow card */}
-          {!loading && showingMore && (
-            <div
-              className={`mt-6 rounded-2xl border border-border border-dashed bg-card/20 p-10 text-center transition-all duration-500 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-            >
-              <Lock className="mx-auto mb-3 h-6 w-6 text-muted-foreground/40" />
-              <p className="text-sm font-medium text-foreground">
-                {currentMeta.total - filtered.length} more {currentMeta.label.toLowerCase()} in the vault
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Unlocked instantly with Founder access.
-              </p>
-              <Button size="sm" className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90" asChild>
-                <Link href="/pricing">
-                  Get Access — $59
-                  <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                </Link>
-              </Button>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Founder CTA Banner */}
-      <section className="border-t border-border/40 py-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <div
-            className={`rounded-2xl border border-border bg-secondary/20 p-10 text-center transition-all duration-500 ease-out sm:p-16 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
-          >
-            <p className="font-mono text-xs font-medium uppercase tracking-widest text-muted-foreground">
-              — Unlock the Full Vault
-            </p>
-            <h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              147+ Assets. One Payment. Forever.
-            </h2>
-            <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
-              Founder access unlocks every asset in the vault — current and future — plus the
-              125GB personal vault and AI Toolkit. One-time payment at $59 while Tier 1 is active.
-            </p>
-            <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <Button
-                size="lg"
-                className="bg-primary text-primary-foreground transition-all duration-200 hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98]"
-                asChild
-              >
-                <Link href="/pricing">
-                  Get Founder Access — $59
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-border hover:border-foreground/40"
-                asChild
-              >
-                <Link href="/faq">Questions? Read the FAQ</Link>
-              </Button>
-            </div>
-            <p className="mt-6 text-xs text-muted-foreground">
-              7-day refund · Instant access · 227 Tier 1 slots remaining at $59
-            </p>
-          </div>
         </div>
       </section>
 
