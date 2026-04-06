@@ -121,7 +121,7 @@ export default function AdminPage() {
       disclaimer: product.disclaimer ?? "",
       what_you_will_get: product.what_you_will_get ?? [],
     })
-    setWhatYouGetInput((product.what_you_will_get ?? []).join("\n"))
+    setWhatYouGetInput(Array.isArray(product.what_you_will_get) ? product.what_you_will_get.join("\n") : "")
     setFormError("")
     setModalOpen(true)
   }

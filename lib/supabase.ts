@@ -37,9 +37,9 @@ export function mapProductToAsset(p: Product): Asset {
     description: p.description ?? "",
     meta: p.meta ?? "",
     disclaimer: p.disclaimer ?? undefined,
-    whatYouGet: p.what_you_will_get ?? undefined,
+    whatYouGet: Array.isArray(p.what_you_will_get) ? p.what_you_will_get : undefined,
     image_url: p.image_url,
-    extra_images: p.extra_images,
+    extra_images: Array.isArray(p.extra_images) ? p.extra_images : null,
     lemonsqueezy_url: p.lemonsqueezy_url,
     required_plan_uid: p.required_plan_uid,
   }

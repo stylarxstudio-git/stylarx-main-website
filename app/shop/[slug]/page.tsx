@@ -28,11 +28,13 @@ export default function ProductPage() {
     if (!slug) return
 
     async function fetchProduct() {
-      const { data, error } = await supabase
+      const { data: rows, error } = await supabase
         .from("products")
         .select("*")
         .eq("slug", slug)
-        .single()
+        .limit(1)
+
+      const data = rows?.[0] ?? null
 
       if (error || !data) {
         setMissing(true)

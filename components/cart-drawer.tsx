@@ -112,9 +112,12 @@ export function CartDrawer() {
                         <Button
                           size="sm"
                           className="h-7 bg-primary px-3 text-xs text-primary-foreground hover:bg-primary/90"
+                          asChild
                         >
-                          <Download className="mr-1 h-3 w-3" />
-                          Download
+                          <a href={item.lemonsqueezy_url ?? "#"} onClick={closeCart}>
+                            <Download className="mr-1 h-3 w-3" />
+                            Download
+                          </a>
                         </Button>
                       ) : (
                         <div className="flex items-center gap-1.5">
