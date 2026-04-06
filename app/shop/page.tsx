@@ -279,7 +279,7 @@ export default function ShopPage() {
                           >
                             <Link href="/pricing">
                               <Lock className="mr-1.5 h-3.5 w-3.5" />
-                              Unlock with Founder Access
+                              Upgrade to a higher plan
                             </Link>
                           </Button>
                         )}
