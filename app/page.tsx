@@ -16,7 +16,7 @@ const pricingFeatures = [
   "Full Access to AI Tool",
   "125 GB Vault Storage",
   "3D Mentor: 300 msgs / 3hrs",
-  "Project Manager: 50 msgs / 3hrs",
+  "Game Dev Blueprint: 50 msgs / 3hrs",
   "Premium Support",
   "Pay Once, Access Forever",
 ]
