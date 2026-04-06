@@ -67,8 +67,8 @@ export default function ShopPage() {
               The Asset Browser
             </h1>
             <p className="mt-4 max-w-lg text-lg text-muted-foreground">
-              147 production assets. 7 categories. New drops weekly.
-              Free assets available. Full vault unlocked with Founder access.
+              Production assets. 7 categories. New drops weekly.
+              Free assets available. Full Assets unlocked with Founder access.
             </p>
           </div>
 
@@ -77,10 +77,7 @@ export default function ShopPage() {
             className={`mt-8 grid grid-cols-2 gap-6 sm:flex sm:flex-wrap transition-all duration-500 ease-out delay-150 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
             {[
-              { value: "147+",   label: "Total Assets"      },
-              { value: "51",     label: "3D Models"         },
-              { value: "50",     label: "Gobo Textures"     },
-              { value: "4",      label: "Blender Add-ons"   },
+              { value: "140+",   label: "Total Assets"      },
               { value: "Weekly", label: "New Drops"         },
             ].map((stat) => (
               <div key={stat.label} className="flex flex-col">
