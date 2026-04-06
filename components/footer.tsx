@@ -13,7 +13,6 @@ const footerLinks = {
   ],
   company: [
     { label: "Pricing", href: "/pricing" },
-    { label: "About", href: "#" },
     { label: "Contact", href: "/contact" },
     { label: "FAQs", href: "/faq" },
   ],
@@ -142,18 +141,7 @@ export function Footer() {
             &copy; {new Date().getFullYear()} STYLARX. All rights reserved.
           </p>
           <div className="flex gap-6">
-            <Link
-              href="#"
-              className="text-sm text-muted-foreground transition-all duration-200 hover:text-foreground"
-            >
-              Terms
-            </Link>
-            <Link
-              href="#"
-              className="text-sm text-muted-foreground transition-all duration-200 hover:text-foreground"
-            >
-              Privacy
-            </Link>
+            
           </div>
         </div>
       </div>
