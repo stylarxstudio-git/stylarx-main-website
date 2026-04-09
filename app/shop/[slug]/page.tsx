@@ -1,7 +1,4 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import { useParams, notFound } from "next/navigation"
+import { notFound } from "next/navigation"
 import { supabase, mapProductToAsset } from "@/lib/supabase"
 import type { Product } from "@/lib/supabase"
 import { formatColor, categoryMeta, PLAN_MAP } from "@/lib/assets"
@@ -11,75 +8,39 @@ import { Footer } from "@/components/footer"
 import { AddToCartButton } from "@/components/add-to-cart-button"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Lock, Download, FileBox, ChevronDown, Package, AlertTriangle, Loader2 } from "lucide-react"
+import { ArrowLeft, Lock, Download, FileBox, ChevronDown, Package, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-export default function ProductPage() {
-  const params = useParams()
-  const slug = params.slug as string
+export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
 
-  const [asset, setAsset] = useState<Asset | null>(null)
-  const [related, setRelated] = useState<Asset[]>([])
-  const [gallery, setGallery] = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
-  const [missing, setMissing] = useState(false)
+  const { data: rows, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("slug", slug)
+    .limit(1)
 
-  useEffect(() => {
-    if (!slug) return
+  const data = rows?.[0] ?? null
 
-    async function fetchProduct() {
-      const { data: rows, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("slug", slug)
-        .limit(1)
-
-      const data = rows?.[0] ?? null
-
-      if (error || !data) {
-        setMissing(true)
-        setLoading(false)
-        return
-      }
-
-      const mapped = mapProductToAsset(data as Product)
-      setAsset(mapped)
-
-      // Build gallery
-      const imgs: string[] = [data.image_url ?? "/placeholder.jpg"]
-      if (Array.isArray(data.extra_images)) imgs.push(...data.extra_images)
-      while (imgs.length < 4) imgs.push(data.image_url ?? "/placeholder.jpg")
-      setGallery(imgs)
-
-      // Fetch related
-      const { data: relData } = await supabase
-        .from("products")
-        .select("*")
-        .eq("category", data.category)
-        .neq("id", data.id)
-        .limit(4)
-      setRelated((relData ?? []).map((p) => mapProductToAsset(p as Product)))
-
-      setLoading(false)
-    }
-
-    fetchProduct()
-  }, [slug])
-
-  if (!loading && missing) notFound()
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="flex items-center justify-center pt-48">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      </div>
-    )
+  if (error || !data) {
+    notFound()
   }
 
-  if (!asset) return null
+  const asset = mapProductToAsset(data as Product)
+
+  // Build gallery
+  const gallery: string[] = [data.image_url ?? "/placeholder.jpg"]
+  if (Array.isArray(data.extra_images)) gallery.push(...data.extra_images)
+  while (gallery.length < 4) gallery.push(data.image_url ?? "/placeholder.jpg")
+
+  // Fetch related
+  const { data: relData } = await supabase
+    .from("products")
+    .select("*")
+    .eq("category", data.category)
+    .neq("id", data.id)
+    .limit(4)
+  const related = (relData ?? []).map((p) => mapProductToAsset(p as Product))
 
   const categoryLabel = categoryMeta[asset.category]?.label ?? asset.category
   const planInfo = asset.required_plan_uid ? PLAN_MAP[asset.required_plan_uid] : null
@@ -339,7 +300,7 @@ export default function ProductPage() {
               </Link>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {related.map((item) => (
+              {related.map((item: Asset) => (
                 <Link
                   key={item.id}
                   href={`/shop/${item.slug}`}
