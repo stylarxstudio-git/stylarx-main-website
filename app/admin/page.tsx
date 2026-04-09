@@ -156,12 +156,20 @@ export default function AdminPage() {
     const files = Array.from(e.target.files ?? [])
     if (!files.length) return
     setExtraImgsUploading(true)
+    setFormError("")
     const urls: string[] = []
     for (const file of files) {
       const url = await uploadProductImage(file, "gallery")
       if (url) urls.push(url)
     }
-    setForm((p) => ({ ...p, extra_images: [...(p.extra_images ?? []), ...urls] }))
+    if (urls.length === 0) {
+      setFormError("Extra image upload failed. Check your Supabase storage bucket 'product-images'.")
+    } else {
+      if (urls.length < files.length) {
+        setFormError(`${files.length - urls.length} of ${files.length} image(s) failed to upload.`)
+      }
+      setForm((p) => ({ ...p, extra_images: [...(p.extra_images ?? []), ...urls] }))
+    }
     setExtraImgsUploading(false)
     if (extraImgsRef.current) extraImgsRef.current.value = ""
   }
@@ -191,19 +199,34 @@ export default function AdminPage() {
         .filter(Boolean),
     }
 
-    let error
     if (editingId !== null) {
-      ;({ error } = await supabase.from("products").update(payload).eq("id", editingId))
-    } else {
-      ;({ error } = await supabase.from("products").insert([payload]))
-    }
+      const { data: updated, error } = await supabase
+        .from("products")
+        .update(payload)
+        .eq("id", editingId)
+        .select("id")
 
-    setSaving(false)
-    if (error) {
-      setFormError(`Supabase error: ${error.message}`)
+      setSaving(false)
+
+      if (error) {
+        setFormError(`Supabase error: ${error.message}`)
+      } else if (!updated || updated.length === 0) {
+        setFormError(
+          "Save blocked by Supabase Row Level Security (RLS). Go to Supabase Dashboard → Table Editor → products → Policies → add an UPDATE policy for the anon role (or disable RLS)."
+        )
+      } else {
+        closeModal()
+        fetchProducts()
+      }
     } else {
-      closeModal()
-      fetchProducts()
+      const { error } = await supabase.from("products").insert([payload])
+      setSaving(false)
+      if (error) {
+        setFormError(`Supabase error: ${error.message}`)
+      } else {
+        closeModal()
+        fetchProducts()
+      }
     }
   }
 

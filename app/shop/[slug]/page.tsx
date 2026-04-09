@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { notFound } from "next/navigation"
 import { supabase, mapProductToAsset } from "@/lib/supabase"
 import type { Product } from "@/lib/supabase"
