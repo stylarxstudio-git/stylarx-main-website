@@ -219,12 +219,24 @@ export default function AdminPage() {
         fetchProducts()
       }
     } else {
-      const { error } = await supabase.from("products").insert([payload])
+      const { data: inserted, error } = await supabase
+        .from("products")
+        .insert([payload])
+        .select()
       setSaving(false)
       if (error) {
         setFormError(`Supabase error: ${error.message}`)
       } else {
-        closeModal()
+        const saved = inserted?.[0] as Record<string, unknown> | undefined
+        const missing: string[] = []
+        if (payload.what_you_will_get && payload.what_you_will_get.length > 0 && !Array.isArray(saved?.what_you_will_get)) missing.push("what_you_will_get (text[])")
+        if (payload.formats && payload.formats.length > 0 && !Array.isArray(saved?.formats)) missing.push("formats (text[])")
+        if (payload.extra_images && payload.extra_images.length > 0 && !Array.isArray(saved?.extra_images)) missing.push("extra_images (text[])")
+        if (missing.length > 0) {
+          setFormError(`Product saved, but these fields were not stored — add them to your Supabase products table as the listed types: ${missing.join(", ")}`)
+        } else {
+          closeModal()
+        }
         fetchProducts()
       }
     }

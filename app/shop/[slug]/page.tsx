@@ -30,10 +30,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   const asset = mapProductToAsset(data as Product)
 
-  // Build gallery
-  const gallery: string[] = [data.image_url ?? "/placeholder.jpg"]
-  if (Array.isArray(data.extra_images)) gallery.push(...data.extra_images)
-  while (gallery.length < 4) gallery.push(data.image_url ?? "/placeholder.jpg")
+  // Build gallery — only include actual extra images, no padding
+  const mainImage = data.image_url ?? "/placeholder.jpg"
+  const extraImages: string[] = Array.isArray(data.extra_images) ? data.extra_images : []
+  const gallery: string[] = [mainImage, ...extraImages]
 
   // Fetch related
   const { data: relData } = await supabase
@@ -96,24 +96,26 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               </div>
             </div>
 
-            {/* Thumbnail strip */}
-            <div className="grid grid-cols-4 gap-3">
-              {gallery.slice(0, 4).map((src, i) => (
-                <div
-                  key={i}
-                  className="aspect-[4/3] cursor-pointer overflow-hidden rounded-xl border border-border bg-secondary/30 transition-all duration-150 hover:border-foreground/30"
-                >
-                  <Image
-                    src={src}
-                    alt={`${asset.name} preview ${i + 1}`}
-                    width={200}
-                    height={150}
-                    className="h-full w-full object-cover"
-                    unoptimized
-                  />
-                </div>
-              ))}
-            </div>
+            {/* Thumbnail strip — only show if there are extra images */}
+            {extraImages.length > 0 && (
+              <div className={`grid gap-3 ${extraImages.length === 1 ? "grid-cols-2" : extraImages.length === 2 ? "grid-cols-3" : "grid-cols-4"}`}>
+                {gallery.map((src, i) => (
+                  <div
+                    key={i}
+                    className="aspect-[4/3] cursor-pointer overflow-hidden rounded-xl border border-border bg-secondary/30 transition-all duration-150 hover:border-foreground/30"
+                  >
+                    <Image
+                      src={src}
+                      alt={`${asset.name} preview ${i + 1}`}
+                      width={200}
+                      height={150}
+                      className="h-full w-full object-cover"
+                      unoptimized
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Right — info panel */}
